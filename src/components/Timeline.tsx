@@ -1,77 +1,61 @@
-export type LaneId = "Work" | "School" | "Volunteering";
+const NUM_LANES = 3;
+const DATA: TimelineData = {
+  work: {
+    lane: "Work",
+    rails: 2,
+    items: [
+      { title: "ViLLE", start: "2016-02-01", end: "2016-05-30" },
+      { title: "Vincit", start: "2018-04-01", end: "2019-08-30" },
+      { title: "Identio", start: "2020-05-01", end: "2022-08-30" },
+      { title: "Arado", start: "2022-09-01", end: "2025-04-30" },
+      { title: "Purtsi Consulting", start: "2025-05-01", end: "2025-11-30" },
+    ],
+  },
+  school: {
+    lane: "School",
+    rails: 1,
+    items: [
+      { title: "Turun Yliopisto", start: "2016-09-01", end: "2022-12-20" },
+    ]
+  },
+  volunteering: {
+    lane: "Volunteering",
+    rails: 2,
+    items: [
+      { title: "Digit ry", start: "2018-01-01", end: "2019-12-31" }
+    ]
+  }
+}
+
+export type TimelineData = Record<string, LaneData>;
+
+export type LaneData = {
+  lane: string;
+  rails: 1 | 2;
+  items: TimelineItem[];
+}
 
 export type TimelineItem = {
-  id: string;
   title: string;
-  start: string | Date; // ISO or Date
-  end?: string | Date;  // if omitted => dot
-  lane: LaneId;
+  start: string;
+  end: string;
+  rail?: 0 | 1;
 };
 
 export type SvgTimelineProps = {
-  data: TimelineItem[];
-  lanes?: LaneId[];
-  width?: number;       // outer width in CSS px; SVG scales via viewBox
-  laneHeight?: number;  // vertical space per lane in SVG units
-  laneGap?: number;     // gap between lanes
-  pxPerMonth?: number;  // horizontal scale
-  padMonths?: number;   // domain padding on both ends
-  colors?: Partial<Record<LaneId, string>>; // fill color per lane
+  data: Record<string, LaneData>
 };
 
-const DEFAULTS = {
-  width: 1100,
-  laneHeight: 64,
-  laneGap: 12,
-  pxPerMonth: 20,
-  padMonths: 1,
-} as const;
-
-function toDate(d: string | Date): Date {
-  return d instanceof Date ? d : new Date(d);
-}
-
-function monthDiff(a: Date, b: Date) {
-  return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
-}
-
-function addMonths(d: Date, m: number) {
-  const x = new Date(d);
-  x.setMonth(x.getMonth() + m);
-  return x;
-}
-
-function startOfMonth(d: Date) {
-  return new Date(d.getFullYear(), d.getMonth(), 1);
-}
-
-function startOfYear(d: Date) { return new Date(d.getFullYear(), 0, 1); }
-function endOfYear(d: Date) { return new Date(d.getFullYear(), 11, 31, 23, 59, 59, 999); }
-
-function domainFromData(data: TimelineItem[], padMonths: number) {
-  const dates = data.flatMap(i => [toDate(i.start), i.end ? toDate(i.end) : toDate(i.start)]);
-  const min = new Date(Math.min(...dates.map(Number)));
-  const max = new Date(Math.max(...dates.map(Number)));
-  const minP = addMonths(startOfYear(min), -padMonths);
-  const maxP = addMonths(endOfYear(max), padMonths);
-  return { min: minP, max: maxP };
-}
-
-function yearsBetween(min: Date, max: Date): number[] {
-  const out: number[] = [];
-  for (let y = min.getFullYear(); y <= max.getFullYear(); y++) out.push(y);
-  return out;
-}
+const PX_PER_MONTH = 14;
+const LANE_HEIGHT = 60;
+const LANE_GAP = 5;
+const PAD_MONTHS = 5;
 
 const SvgTimeline = ({
   data,
-  lanes = ["Work", "School", "Volunteering"],
-  laneHeight = DEFAULTS.laneHeight,
-  laneGap = DEFAULTS.laneGap,
-  pxPerMonth = DEFAULTS.pxPerMonth,
-  padMonths = DEFAULTS.padMonths,
 }: SvgTimelineProps) => {
-  const { min, max } = domainFromData(data, padMonths);
+  const { min, max } = domainFromData(data, PAD_MONTHS);
+  console.log(min, max)
   const totalMonths = Math.max(1, monthDiff(startOfMonth(min), startOfMonth(max)) + 1);
 
   // X scale: date -> px
@@ -81,14 +65,13 @@ const SvgTimeline = ({
     const monthStart = startOfMonth(d);
     const nextMonth = addMonths(monthStart, 1);
     const frac = (+d - +monthStart) / (+nextMonth - +monthStart);
-    return m * pxPerMonth + frac * pxPerMonth;
+    return m * PX_PER_MONTH + frac * PX_PER_MONTH;
   };
 
   const yearTicks = yearsBetween(min, max);
 
-  const height = lanes.length * (laneHeight + laneGap) + 60;
-  const innerWidth = Math.max(800, totalMonths * pxPerMonth); // min width if you want
-
+  const height = NUM_LANES * (LANE_HEIGHT + LANE_GAP) + 60;
+  const innerWidth = Math.max(800, totalMonths * PX_PER_MONTH); // min width if you want
 
   return (
     <div className="w-full overflow-x-auto">
@@ -118,42 +101,32 @@ const SvgTimeline = ({
         </g>
 
         {/* Lane labels and rows */}
-        {lanes.map((lane, idx) => {
-          const yTop = 40 + idx * (laneHeight + laneGap);
+        {Object.values(data).map((lane, idx) => {
+          const yTop = 40 + idx * (LANE_HEIGHT + LANE_GAP);
           return (
-            <g key={lane} transform={`translate(0, ${yTop})`}>
+            <g key={lane.lane} transform={`translate(0, ${yTop})`}>
               {/* Lane background */}
-              <rect x={0} y={0} width={innerWidth} height={laneHeight} />
-              <line x1={0} y1={laneHeight} x2={innerWidth} y2={laneHeight} strokeWidth={1} className="stroke-licorice" />
+              <rect x={0} y={0} width={innerWidth} height={LANE_HEIGHT} />
+              <line x1={0} y1={LANE_HEIGHT} x2={innerWidth} y2={LANE_HEIGHT} strokeWidth={1} className="stroke-licorice" />
 
               {/* Lane label */}
-              <text x={8} y={36} fontSize={20} fill="#374151" fontWeight={600}>{lane}</text>
+              <text x={8} y={36} fontSize={20} fill="#374151" fontWeight={600}>{lane.lane}</text>
 
               {/* Items in lane */}
-              {data.filter(d => d.lane === lane).map(it => {
+              {lane.items.map(it => {
                 const s = toDate(it.start);
                 const e = it.end ? toDate(it.end) : undefined;
                 const xStart = x(s);
                 const xEnd = e ? x(e) : x(s);
-                const cy = laneHeight / 2;
+                const cy = LANE_HEIGHT / 2;
                 const color = "#6b7280";
-
-                if (!e) {
-                  // point
-                  return (
-                    <g key={it.id} transform={`translate(${xStart},0)`}>
-                      <circle cx={0} cy={cy} r={6} fill={color} />
-                      <text x={8} y={cy + 4} fontSize={12} fill="#111827">{it.title}</text>
-                    </g>
-                  );
-                }
 
                 const w = Math.max(2, xEnd - xStart);
                 const r = 6;
                 return (
-                  <g key={it.id} transform={`translate(100, 0)`}>
-                    <rect x={xStart} y={cy - 10} width={w} height={20} rx={r} ry={r} fill={color} opacity={0.95} />
-                    <text x={xStart + 8} y={cy + 4} fontSize={12} fill="#ffffff" style={{ pointerEvents: "none" }}>
+                  <g key={it.title} transform={`translate(100, 0)`}>
+                    <rect x={xStart} y={cy - 20} width={w} height={40} rx={r} ry={r} fill={color} opacity={0.95} />
+                    <text x={xStart + 8} y={cy + 4} fontSize={16} className="fill-white pointer-events-none">
                       {it.title}
                     </text>
                   </g>
@@ -167,13 +140,43 @@ const SvgTimeline = ({
   );
 }
 
-const DATA: TimelineItem[] = [
-  { id: "a", title: "ViLLE Team", start: "2016-02-01", end: "2016-05-30", lane: "Work" },
-  { id: "b", title: "Vincit", start: "2018-04-01", end: "2019-08-30", lane: "Work" },
-  { id: "c", title: "Identio", start: "2020-05-01", end: "2022-08-30", lane: "Work" },
-  { id: "d", title: "Arado", start: "2022-09-01", end: "2025-04-30", lane: "Work" },
-  { id: "d", title: "Purtsi Consulting", start: "2025-05-01", end: "2025-11-30", lane: "Work" },
-];
+function toDate(d: string | Date): Date {
+  return d instanceof Date ? d : new Date(d);
+}
+
+function monthDiff(a: Date, b: Date) {
+  return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
+}
+
+function addMonths(d: Date, m: number) {
+  const x = new Date(d);
+  x.setMonth(x.getMonth() + m);
+  return x;
+}
+
+function startOfMonth(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth(), 1);
+}
+
+function startOfYear(d: Date) { return new Date(d.getFullYear(), 0, 1); }
+function endOfYear(d: Date) { return new Date(d.getFullYear(), 11, 31, 23, 59, 59, 999); }
+
+function domainFromData(data: TimelineData, padMonths: number) {
+  const dates = Object.values(data).flatMap((lane: LaneData) => lane.items.flatMap(({ start, end }) => [toDate(start), toDate(end)]));
+  console.log(dates)
+  const min = new Date(Math.min(...dates.map(Number)));
+  const max = new Date(Math.max(...dates.map(Number)));
+  const minP = addMonths(startOfYear(min), -padMonths);
+  const maxP = addMonths(endOfYear(max), padMonths);
+  return { min: minP, max: maxP };
+}
+
+function yearsBetween(min: Date, max: Date): number[] {
+  const out: number[] = [];
+  for (let y = min.getFullYear(); y <= max.getFullYear(); y++) out.push(y);
+  return out;
+}
+
 
 export default () => {
   return (
