@@ -1,0 +1,40 @@
+---
+// src/components/Hero.astro
+export interface Props {
+  kicker?: string
+  title: string
+  subtitle?: string
+  ctaHref?: string
+  ctaText?: string
+  secondaryHref?: string
+  secondaryText?: string
+}
+
+const {
+  kicker,
+  title,
+  subtitle,
+} = Astro.props;
+---
+
+<header class="relative isolate">
+  <div class="mx-auto px-6 py-24 lg:px-8 lg:py-32 bg-salmon">
+    <div class="mx-auto max-w-3xl text-center">
+      {kicker && (
+        <p class="mb-3 text-sm font-semibold uppercase tracking-widest text-purple">
+          {kicker}
+        </p>
+      )}
+
+      <h1 class="font-display text-[3.5rem] text-purple md:text-[6rem] leading-none">
+        {title}
+      </h1>
+
+      {subtitle && (
+        <p class="font-display text-[1.8rem] text-purple md:text-[2.8rem]">
+          {subtitle}
+        </p>
+      )}
+    </div>
+  </div>
+</header>

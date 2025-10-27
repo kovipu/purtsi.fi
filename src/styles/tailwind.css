@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Anuphan", sans-serif;
+  --font-display: "Chicle", serif;
+
+  --color-salmon: #f88e79;
+  --color-pale: #fcdbd5;
+  --color-purple: #6b2d5c;
+  --color-licorice: #1f1300;
+}
+
+@font-face{
+  font-family: "Chicle";
+  src: url("/fonts/Chicle.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face{
+  font-family: "Anuphan";
+  src: url("/fonts/Anuphan-Light.woff2") format("woff2");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face{
+  font-family: "Anuphan";
+  src: url("/fonts/Anuphan-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face{
+  font-family: "Anuphan";
+  src: url("/fonts/Anuphan-Medium.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face{
+  font-family: "Anuphan";
+  src: url("/fonts/Anuphan-SemiBold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
